@@ -1,0 +1,81 @@
+name: Python vs TS parity gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      window_runs:
+        description: "Dual-run windows (TS then Python) to execute"
+        required: false
+        default: "2"
+      eval_limit:
+        description: "Rows from dataset.jsonl per run"
+        required: false
+        default: "8"
+  schedule:
+    - cron: "30 7 * * 1" # Weekly Monday 07:30 UTC
+
+jobs:
+  parity-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install bt CLI
+        run: |
+          curl -fsSL "https://github.com/braintrustdata/bt/releases/latest/download/bt-x86_64-unknown-linux-gnu.tar.gz" -o /tmp/bt.tar.gz
+          mkdir -p /tmp/bt
+          tar -xzf /tmp/bt.tar.gz -C /tmp/bt
+          mkdir -p "$HOME/.local/bin"
+          install /tmp/bt/bt "$HOME/.local/bin/bt"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/bt" --version
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt google-adk braintrust-adk
+
+      - name: Run parity gate
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          BRAINTRUST_API_KEY: ${{ secrets.BRAINTRUST_API_KEY }}
+          BRAINTRUST_ORG_NAME: Braintrust Demos
+          WINDOW_RUNS: ${{ github.event.inputs.window_runs || '2' }}
+          EVAL_LIMIT: ${{ github.event.inputs.eval_limit || '8' }}
+        run: |
+          mkdir -p reports
+          npm run parity:gate -- \
+            --project vercel-ai-sdk-supervisor \
+            --window-runs "$WINDOW_RUNS" \
+            --eval-limit "$EVAL_LIMIT" \
+            --ts-cli "bt eval" \
+            --python-cli "braintrust eval" \
+            --output-json "reports/parity_gate_${GITHUB_RUN_ID}.json"
+          cp "reports/parity_gate_${GITHUB_RUN_ID}.json" reports/parity_gate_latest.json
+
+      - name: Upload parity report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parity-gate-report
+          path: reports/parity_gate_*.json

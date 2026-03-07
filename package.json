@@ -1,0 +1,31 @@
+{
+  "name": "vercel-supervisor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc --noEmit",
+    "eval": "bt eval evals/eval_supervisor.ts evals/eval_math_agent.ts evals/eval_research_agent.ts",
+    "eval:dev": "bt eval evals/eval_supervisor.ts evals/eval_math_agent.ts evals/eval_research_agent.ts --dev --dev-host 0.0.0.0 --dev-port 8300",
+    "parity:gate": "python3 scripts/parity_gate.py",
+    "run:local": "tsx src-ts/cli/local_runner.ts",
+    "run:query": "tsx scripts/retest_query.ts",
+    "run:queries": "tsx scripts/run_queries.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^2.0.0",
+    "ai": "^5.0.0",
+    "braintrust": "latest",
+    "dotenv": "^17.2.3",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.6",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}
