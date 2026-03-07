@@ -1,0 +1,50 @@
+{
+  "project": "vercel-ai-sdk-supervisor",
+  "window_runs": 1,
+  "eval_limit": 3,
+  "thresholds": {
+    "Delegation Compliance": 0.02,
+    "Routing Accuracy": 0.03
+  },
+  "means": {
+    "python": {
+      "Delegation Compliance": 0.5,
+      "Routing Accuracy": 1.0
+    },
+    "typescript": {
+      "Delegation Compliance": 0.5,
+      "Routing Accuracy": 0.75
+    }
+  },
+  "deltas": {
+    "Delegation Compliance": 0.0,
+    "Routing Accuracy": 0.25
+  },
+  "status": {
+    "Delegation Compliance": true,
+    "Routing Accuracy": false,
+    "passed": false
+  },
+  "runs": {
+    "typescript": [
+      {
+        "experiment_id": "af3f6836-45b4-41a6-b707-800ce2bb5a96",
+        "experiment_url": "https://www.braintrust.dev/app/Braintrust%20Demos/p/vercel-ai-sdk-supervisor/experiments/curtis%40braintrustdata.com-1772870821",
+        "scores": {
+          "Delegation Compliance": 0.5,
+          "Routing Accuracy": 0.75
+        }
+      }
+    ],
+    "python": [
+      {
+        "experiment_id": "ba3d788d-4942-43df-b64f-3d291818fef5",
+        "experiment_url": "https://www.braintrust.dev/app/Braintrust%20Demos/p/vercel-ai-sdk-supervisor/experiments/main-1772870833",
+        "scores": {
+          "Delegation Compliance": 0.5,
+          "Routing Accuracy": 1.0
+        }
+      }
+    ]
+  }
+}
