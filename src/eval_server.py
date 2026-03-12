@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import os
 import subprocess
-from pathlib import Path
+from collections import deque
 
 import modal
 from fastapi import FastAPI, Request, Response
@@ -16,7 +16,7 @@ UPSTREAM_BASE = f"http://127.0.0.1:{DEVSERVER_PORT}"
 
 modal_image = (
     modal.Image.debian_slim()
-    .apt_install("curl", "git", "nodejs", "npm")
+    .apt_install("curl", "git", "ca-certificates")
     .pip_install_from_requirements("requirements.txt")
     .add_local_dir("src-ts", remote_path="/root/src-ts", copy=True)
     .add_local_dir("evals", remote_path="/root/evals", copy=True)
@@ -25,6 +25,8 @@ modal_image = (
     .add_local_file("package.json", "/root/package.json", copy=True)
     .add_local_file("package-lock.json", "/root/package-lock.json", copy=True)
     .add_local_file("tsconfig.json", "/root/tsconfig.json", copy=True)
+    .run_commands("curl -fsSL https://deb.nodesource.com/setup_20.x | bash -")
+    .apt_install("nodejs")
     .run_commands("cd /root && npm ci")
 )
 
@@ -49,7 +51,13 @@ _secrets = [modal.Secret.from_dotenv()]
 def braintrust_eval_server() -> FastAPI:
     eval_app = FastAPI(title="Braintrust TS Eval Proxy")
 
-    state: dict[str, subprocess.Popen[str] | None] = {"proc": None}
+    state: dict[str, object] = {"proc": None, "tail": deque(maxlen=120)}
+
+    def _log_reader(stream, tail: deque[str], label: str) -> None:
+        for line in iter(stream.readline, ""):
+            entry = f"[{label}] {line.rstrip()}"
+            tail.append(entry)
+            print(entry, flush=True)
 
     async def _start_devserver_if_needed() -> None:
         proc = state.get("proc")
@@ -59,19 +67,31 @@ def braintrust_eval_server() -> FastAPI:
         env = os.environ.copy()
         env.setdefault("BRAINTRUST_DEVSERVER_PORT", str(DEVSERVER_PORT))
 
-        state["proc"] = subprocess.Popen(
+        tail = state["tail"]
+        assert isinstance(tail, deque)
+
+        proc = subprocess.Popen(
             ["npm", "run", "eval:dev"],
             cwd="/root",
             env=env,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
         )
+        state["proc"] = proc
+        asyncio.create_task(asyncio.to_thread(_log_reader, proc.stdout, tail, "eval:stdout"))
+        asyncio.create_task(asyncio.to_thread(_log_reader, proc.stderr, tail, "eval:stderr"))
 
         deadline = asyncio.get_event_loop().time() + 45
         while True:
-            if state["proc"] is None or state["proc"].poll() is not None:
+            proc = state.get("proc")
+            if not isinstance(proc, subprocess.Popen):
                 raise RuntimeError("Failed to start Braintrust TS devserver")
+            if proc.poll() is not None:
+                recent = "\n".join(list(tail)[-20:])
+                raise RuntimeError(
+                    f"Failed to start Braintrust TS devserver (exit={proc.returncode}). Recent logs:\n{recent}"
+                )
             try:
                 async with httpx.AsyncClient(timeout=2.0) as client:
                     await client.get(f"{UPSTREAM_BASE}/")
