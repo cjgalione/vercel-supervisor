@@ -34,3 +34,7 @@ export const evalParameters = {
 export type EvalParameters = {
   [K in keyof typeof evalParameters]: z.infer<(typeof evalParameters)[K]>;
 };
+
+export const EVAL_PARAMETERS_PROJECT_NAME = "vercel-ai-sdk-supervisor";
+export const EVAL_PARAMETERS_SLUG = "supervisor-eval-parameters";
+export const EVAL_PARAMETERS_NAME = "Supervisor Eval Parameters";

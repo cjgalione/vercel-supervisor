@@ -46,6 +46,14 @@ npm run run:queries -- --num-questions 25 --concurrency 1
 
 ## Evals
 
+Push shared eval parameters first (creates a versioned Parameters object in Braintrust):
+
+```bash
+npm run eval:push-params
+```
+
+Then run evals:
+
 ```bash
 npm run eval
 ```
@@ -57,6 +65,12 @@ bt eval evals/eval_supervisor.ts
 bt eval evals/eval_math_agent.ts
 bt eval evals/eval_research_agent.ts
 ```
+
+Remote eval playground:
+
+1. Add your dev server as a remote eval source.
+2. The parameters from `supervisor-eval-parameters` appear as editable controls.
+3. Use the playground parameter version selector to compare runs across saved versions.
 
 ## Modal remote eval
 

@@ -1,13 +1,17 @@
 import "dotenv/config";
 
-import { Eval } from "braintrust";
-import { z } from "zod";
+import { Eval, loadParameters } from "braintrust";
 
-import { DEFAULT_MATH_AGENT_PROMPT } from "../src-ts/config.js";
 import { runMathAgent } from "../src-ts/agents/math-agent.js";
 import { extractFloatFromText } from "../src-ts/serializer.js";
 import { configureTracing } from "../src-ts/tracing.js";
 import type { SerializedMessage } from "../src-ts/types.js";
+import type { supervisorEvalParameters } from "./eval-parameters-config.js";
+import {
+  EVAL_PARAMETERS_PROJECT_NAME,
+  EVAL_PARAMETERS_SLUG,
+  type EvalParameters,
+} from "./parameters.js";
 
 configureTracing({
   apiKey: process.env.BRAINTRUST_API_KEY,
@@ -15,15 +19,16 @@ configureTracing({
   projectId: process.env.BRAINTRUST_PROJECT_ID,
 });
 
-const parameters = {
-  math_agent_prompt: z.string().default(DEFAULT_MATH_AGENT_PROMPT),
-  math_model: z.string().default("gemini-2.0-flash-lite"),
-};
-
 type MathTaskInput = { query: string; expected_answer?: number };
 type MathTaskOutput = { messages: SerializedMessage[] };
 
-async function runMathTask(input: MathTaskInput, hooks: { parameters: { math_agent_prompt: string; math_model: string }; metadata: Record<string, unknown> }): Promise<MathTaskOutput> {
+async function runMathTask(
+  input: MathTaskInput,
+  hooks: {
+    parameters: Pick<EvalParameters, "math_agent_prompt" | "math_model">;
+    metadata: Record<string, unknown>;
+  },
+): Promise<MathTaskOutput> {
   try {
     const result = await runMathAgent({
       query: input.query,
@@ -115,5 +120,8 @@ await Eval(process.env.BRAINTRUST_PROJECT ?? "vercel-ai-sdk-supervisor", {
   data: MATH_TEST_DATA,
   task: runMathTask,
   scores: [calculationAccuracyScorer, toolUsageScorer, efficiencyScorer, responseFormatScorer],
-  parameters,
+  parameters: loadParameters<typeof supervisorEvalParameters>({
+    projectName: process.env.BRAINTRUST_PROJECT ?? EVAL_PARAMETERS_PROJECT_NAME,
+    slug: EVAL_PARAMETERS_SLUG,
+  }),
 });

@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { Eval, initDataset, initFunction } from "braintrust";
+import { Eval, initDataset, initFunction, loadParameters } from "braintrust";
 
 import type { AgentConfig } from "../src-ts/config.js";
 import { extractQueryFromInput, inferAgentsFromMessages } from "../src-ts/eval_helpers.js";
@@ -12,7 +12,12 @@ import { hasMarker } from "../src-ts/serializer.js";
 import { configureTracing } from "../src-ts/tracing.js";
 import { getSupervisor, runSupervisorWithCritic } from "../src-ts/supervisor.js";
 import type { SerializedMessage } from "../src-ts/types.js";
-import { evalParameters, type EvalParameters } from "./parameters.js";
+import type { supervisorEvalParameters } from "./eval-parameters-config.js";
+import {
+  EVAL_PARAMETERS_PROJECT_NAME,
+  EVAL_PARAMETERS_SLUG,
+  type EvalParameters,
+} from "./parameters.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -303,5 +308,8 @@ await Eval(projectName, {
     delegationComplianceScorer,
     stepEfficiencyScore,
   ],
-  parameters: evalParameters,
+  parameters: loadParameters<typeof supervisorEvalParameters>({
+    projectName: process.env.BRAINTRUST_PROJECT ?? EVAL_PARAMETERS_PROJECT_NAME,
+    slug: EVAL_PARAMETERS_SLUG,
+  }),
 });

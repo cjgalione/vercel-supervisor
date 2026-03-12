@@ -1,12 +1,16 @@
 import "dotenv/config";
 
-import { Eval } from "braintrust";
-import { z } from "zod";
+import { Eval, loadParameters } from "braintrust";
 
-import { DEFAULT_RESEARCH_AGENT_PROMPT } from "../src-ts/config.js";
 import { runResearchAgent } from "../src-ts/agents/research-agent.js";
 import { configureTracing } from "../src-ts/tracing.js";
 import type { SerializedMessage } from "../src-ts/types.js";
+import type { supervisorEvalParameters } from "./eval-parameters-config.js";
+import {
+  EVAL_PARAMETERS_PROJECT_NAME,
+  EVAL_PARAMETERS_SLUG,
+  type EvalParameters,
+} from "./parameters.js";
 
 configureTracing({
   apiKey: process.env.BRAINTRUST_API_KEY,
@@ -14,15 +18,16 @@ configureTracing({
   projectId: process.env.BRAINTRUST_PROJECT_ID,
 });
 
-const parameters = {
-  research_agent_prompt: z.string().default(DEFAULT_RESEARCH_AGENT_PROMPT),
-  research_model: z.string().default("gemini-2.0-flash-lite"),
-};
-
 type ResearchTaskInput = { query: string };
 type ResearchTaskOutput = { messages: SerializedMessage[] };
 
-async function runResearchTask(input: ResearchTaskInput, hooks: { parameters: { research_agent_prompt: string; research_model: string }; metadata: Record<string, unknown> }): Promise<ResearchTaskOutput> {
+async function runResearchTask(
+  input: ResearchTaskInput,
+  hooks: {
+    parameters: Pick<EvalParameters, "research_agent_prompt" | "research_model">;
+    metadata: Record<string, unknown>;
+  },
+): Promise<ResearchTaskOutput> {
   try {
     const result = await runResearchAgent({
       query: input.query,
@@ -99,5 +104,8 @@ await Eval(process.env.BRAINTRUST_PROJECT ?? "vercel-ai-sdk-supervisor", {
   data: RESEARCH_TEST_DATA,
   task: runResearchTask,
   scores: [webSearchUsageScorer, sourceAttributionScorer, efficiencyScorer, answerQualityScorer],
-  parameters,
+  parameters: loadParameters<typeof supervisorEvalParameters>({
+    projectName: process.env.BRAINTRUST_PROJECT ?? EVAL_PARAMETERS_PROJECT_NAME,
+    slug: EVAL_PARAMETERS_SLUG,
+  }),
 });

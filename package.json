@@ -9,6 +9,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc --noEmit",
+    "eval:push-params": "braintrust push evals/eval-parameters-config.ts",
     "eval": "bt eval evals/eval_supervisor.ts evals/eval_math_agent.ts evals/eval_research_agent.ts",
     "eval:dev": "bt eval evals/eval_supervisor.ts evals/eval_math_agent.ts evals/eval_research_agent.ts --dev --dev-host 0.0.0.0 --dev-port 8300",
     "parity:gate": "python3 scripts/parity_gate.py",
