@@ -115,13 +115,20 @@ async function responseFormatScorer(args: { output: MathTaskOutput }) {
   return { name: "Response Format", score: /\d/.test(answerText) ? 1 : 0 };
 }
 
-await Eval(process.env.BRAINTRUST_PROJECT ?? "vercel-ai-sdk-supervisor", {
-  experimentName: "math-agent",
-  data: MATH_TEST_DATA,
-  task: runMathTask,
-  scores: [calculationAccuracyScorer, toolUsageScorer, efficiencyScorer, responseFormatScorer],
-  parameters: loadParameters<typeof supervisorEvalParameters>({
-    projectName: process.env.BRAINTRUST_PROJECT ?? EVAL_PARAMETERS_PROJECT_NAME,
-    slug: EVAL_PARAMETERS_SLUG,
-  }),
+async function registerMathEval(): Promise<void> {
+  await Eval(process.env.BRAINTRUST_PROJECT ?? "vercel-ai-sdk-supervisor", {
+    experimentName: "math-agent",
+    data: MATH_TEST_DATA,
+    task: runMathTask,
+    scores: [calculationAccuracyScorer, toolUsageScorer, efficiencyScorer, responseFormatScorer],
+    parameters: loadParameters<typeof supervisorEvalParameters>({
+      projectName: process.env.BRAINTRUST_PROJECT ?? EVAL_PARAMETERS_PROJECT_NAME,
+      slug: EVAL_PARAMETERS_SLUG,
+    }),
+  });
+}
+
+registerMathEval().catch((error) => {
+  console.error("Failed to register math eval:", error);
+  process.exitCode = 1;
 });

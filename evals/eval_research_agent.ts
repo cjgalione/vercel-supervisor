@@ -99,13 +99,20 @@ async function answerQualityScorer(args: { output: ResearchTaskOutput }) {
   return { name: "Answer Quality", score };
 }
 
-await Eval(process.env.BRAINTRUST_PROJECT ?? "vercel-ai-sdk-supervisor", {
-  experimentName: "research-agent",
-  data: RESEARCH_TEST_DATA,
-  task: runResearchTask,
-  scores: [webSearchUsageScorer, sourceAttributionScorer, efficiencyScorer, answerQualityScorer],
-  parameters: loadParameters<typeof supervisorEvalParameters>({
-    projectName: process.env.BRAINTRUST_PROJECT ?? EVAL_PARAMETERS_PROJECT_NAME,
-    slug: EVAL_PARAMETERS_SLUG,
-  }),
+async function registerResearchEval(): Promise<void> {
+  await Eval(process.env.BRAINTRUST_PROJECT ?? "vercel-ai-sdk-supervisor", {
+    experimentName: "research-agent",
+    data: RESEARCH_TEST_DATA,
+    task: runResearchTask,
+    scores: [webSearchUsageScorer, sourceAttributionScorer, efficiencyScorer, answerQualityScorer],
+    parameters: loadParameters<typeof supervisorEvalParameters>({
+      projectName: process.env.BRAINTRUST_PROJECT ?? EVAL_PARAMETERS_PROJECT_NAME,
+      slug: EVAL_PARAMETERS_SLUG,
+    }),
+  });
+}
+
+registerResearchEval().catch((error) => {
+  console.error("Failed to register research eval:", error);
+  process.exitCode = 1;
 });

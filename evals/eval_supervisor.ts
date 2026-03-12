@@ -2,7 +2,6 @@ import "dotenv/config";
 
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { Eval, initDataset, initFunction, loadParameters } from "braintrust";
 
@@ -19,9 +18,7 @@ import {
   type EvalParameters,
 } from "./parameters.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const projectRoot = path.resolve(__dirname, "..");
+const projectRoot = path.resolve(process.cwd());
 
 const DEFAULT_BRAINTRUST_PROJECT = "vercel-ai-sdk-supervisor";
 const DEFAULT_BRAINTRUST_DATASET = "Google ADK Supervisor Dataset";
@@ -298,18 +295,25 @@ const data = useRemoteDataset
     })
   : loadLocalDataset();
 
-await Eval(projectName, {
-  data,
-  task: runSupervisorTask,
-  scores: [
-    responseQualityScorer,
-    noUnnecessaryClarificationScorer,
-    routingAccuracyScorer,
-    delegationComplianceScorer,
-    stepEfficiencyScore,
-  ],
-  parameters: loadParameters<typeof supervisorEvalParameters>({
-    projectName: process.env.BRAINTRUST_PROJECT ?? EVAL_PARAMETERS_PROJECT_NAME,
-    slug: EVAL_PARAMETERS_SLUG,
-  }),
+async function registerSupervisorEval(): Promise<void> {
+  await Eval(projectName, {
+    data,
+    task: runSupervisorTask,
+    scores: [
+      responseQualityScorer,
+      noUnnecessaryClarificationScorer,
+      routingAccuracyScorer,
+      delegationComplianceScorer,
+      stepEfficiencyScore,
+    ],
+    parameters: loadParameters<typeof supervisorEvalParameters>({
+      projectName: process.env.BRAINTRUST_PROJECT ?? EVAL_PARAMETERS_PROJECT_NAME,
+      slug: EVAL_PARAMETERS_SLUG,
+    }),
+  });
+}
+
+registerSupervisorEval().catch((error) => {
+  console.error("Failed to register supervisor eval:", error);
+  process.exitCode = 1;
 });
