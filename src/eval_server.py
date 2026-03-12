@@ -18,16 +18,13 @@ modal_image = (
     modal.Image.debian_slim()
     .apt_install("curl", "git", "nodejs", "npm")
     .pip_install_from_requirements("requirements.txt")
-    .add_local_dir("src-ts", remote_path="/root/src-ts")
-    .add_local_dir("evals", remote_path="/root/evals")
-    .add_local_dir("scripts", remote_path="/root/scripts")
-    .add_local_file("dataset.jsonl", "/root/dataset.jsonl")
-    .add_local_file("package.json", "/root/package.json")
-    .add_local_file("package-lock.json", "/root/package-lock.json")
-    .add_local_file("tsconfig.json", "/root/tsconfig.json")
-    .run_commands(
-        "cd /tmp && curl -fsSL https://github.com/braintrustdata/bt/releases/latest/download/bt-x86_64-unknown-linux-gnu.tar.gz -o bt.tar.gz && tar -xzf bt.tar.gz && install bt /usr/local/bin/bt"
-    )
+    .add_local_dir("src-ts", remote_path="/root/src-ts", copy=True)
+    .add_local_dir("evals", remote_path="/root/evals", copy=True)
+    .add_local_dir("scripts", remote_path="/root/scripts", copy=True)
+    .add_local_file("dataset.jsonl", "/root/dataset.jsonl", copy=True)
+    .add_local_file("package.json", "/root/package.json", copy=True)
+    .add_local_file("package-lock.json", "/root/package-lock.json", copy=True)
+    .add_local_file("tsconfig.json", "/root/tsconfig.json", copy=True)
     .run_commands("cd /root && npm ci")
 )
 
