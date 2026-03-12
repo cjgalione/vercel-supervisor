@@ -15,10 +15,12 @@
     "parity:gate": "python3 scripts/parity_gate.py",
     "run:local": "tsx src-ts/cli/local_runner.ts",
     "run:query": "tsx scripts/retest_query.ts",
-    "run:queries": "tsx scripts/run_queries.ts"
+    "run:queries": "tsx scripts/run_queries.ts",
+    "test:model": "tsx --test src-ts/model.test.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.0",
+    "@ai-sdk/openai": "^2.0.0",
     "ai": "^5.0.0",
     "braintrust": "latest",
     "dotenv": "^17.2.3",

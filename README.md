@@ -25,6 +25,10 @@ Required env vars:
 - `TAVILY_API_KEY`
 - `BRAINTRUST_API_KEY` (for tracing/evals)
 - Optional: `BRAINTRUST_PROJECT`, `BRAINTRUST_PROJECT_ID`, `TRACE_PROFILE=full|lean`
+- Optional Braintrust AI Gateway:
+  - `BRAINTRUST_USE_GATEWAY=true`
+  - `BRAINTRUST_GATEWAY_URL=https://gateway.braintrust.dev`
+  - `BRAINTRUST_GATEWAY_API_KEY` (falls back to `BRAINTRUST_API_KEY`)
 
 ## Local run
 
@@ -71,6 +75,16 @@ Remote eval playground:
 1. Add your dev server as a remote eval source.
 2. The parameters from `supervisor-eval-parameters` appear as editable controls.
 3. Use the playground parameter version selector to compare runs across saved versions.
+
+## Braintrust AI Gateway
+
+When `BRAINTRUST_USE_GATEWAY=true`, model calls are routed through the Braintrust gateway
+using an OpenAI-compatible endpoint. Existing model values are supported:
+
+- Unprefixed IDs like `gemini-2.0-flash-lite` are used directly.
+- Explicit provider IDs like `google/gemini-2.0-flash-lite` or `openai/gpt-4o-mini` are accepted and normalized to endpoint-compatible model IDs.
+
+Gateway mode applies to local runtime, eval tasks, and query scripts.
 
 ## Modal remote eval
 
