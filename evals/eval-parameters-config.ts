@@ -18,6 +18,7 @@ export const supervisorEvalParameters = project.parameters.create({
   slug: EVAL_PARAMETERS_SLUG,
   description: "Configurable parameters for supervisor, research, and math eval tasks.",
   schema: evalParameters,
+  ifExists: "replace",
   metadata: {
     source: "vercel-supervisor",
   },
