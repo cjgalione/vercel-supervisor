@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import subprocess
 from collections import deque
@@ -39,6 +40,52 @@ app = modal.App(
 )
 
 _secrets = [modal.Secret.from_dotenv()]
+
+PARAMETER_ORDER = [
+    "system_prompt",
+    "prompt_modification",
+    "research_agent_prompt",
+    "math_agent_prompt",
+    "supervisor_model",
+    "research_model",
+    "math_model",
+]
+
+
+def _reorder_parameter_schema(payload: object) -> object:
+    if not isinstance(payload, dict):
+        return payload
+
+    for eval_definition in payload.values():
+        if not isinstance(eval_definition, dict):
+            continue
+        parameters = eval_definition.get("parameters")
+        if not isinstance(parameters, dict):
+            continue
+        schema = parameters.get("schema")
+        if not isinstance(schema, dict):
+            continue
+        properties = schema.get("properties")
+        if not isinstance(properties, dict):
+            continue
+
+        ordered_properties: dict[str, object] = {}
+        for key in PARAMETER_ORDER:
+            if key in properties:
+                ordered_properties[key] = properties[key]
+        for key, value in properties.items():
+            if key not in ordered_properties:
+                ordered_properties[key] = value
+        schema["properties"] = ordered_properties
+
+        required = schema.get("required")
+        if isinstance(required, list):
+            required_lookup = {key: key for key in required if isinstance(key, str)}
+            ordered_required = [key for key in PARAMETER_ORDER if key in required_lookup]
+            ordered_required.extend(key for key in required if isinstance(key, str) and key not in ordered_required)
+            schema["required"] = ordered_required
+
+    return payload
 
 
 @app.function(
@@ -141,8 +188,17 @@ def braintrust_eval_server() -> FastAPI:
             if key.lower() not in {"content-encoding", "transfer-encoding", "connection"}
         }
 
+        response_content = upstream_response.content
+        if path == "list" and upstream_response.headers.get("content-type", "").startswith("application/json"):
+            try:
+                payload = json.loads(upstream_response.content)
+                response_content = json.dumps(_reorder_parameter_schema(payload)).encode("utf-8")
+                response_headers["content-length"] = str(len(response_content))
+            except Exception:
+                response_content = upstream_response.content
+
         return Response(
-            content=upstream_response.content,
+            content=response_content,
             status_code=upstream_response.status_code,
             headers=response_headers,
             media_type=upstream_response.headers.get("content-type"),
