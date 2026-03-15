@@ -16,7 +16,6 @@ import {
   EVAL_PARAMETERS_PROJECT_NAME,
   EVAL_PARAMETERS_SLUG,
   type EvalParameters,
-  resolvePromptText,
 } from "./parameters.js";
 
 const projectRoot = path.resolve(process.cwd());
@@ -88,18 +87,9 @@ function outputMessages(output: Record<string, unknown>): SerializedMessage[] {
   });
 }
 
-async function runSupervisorTask(
-  input: Record<string, unknown>,
-  hooks: { parameters: Record<string, unknown>; metadata: Record<string, unknown> },
-): Promise<{ final_output: string; messages: SerializedMessage[] }> {
+async function runSupervisorTask(input: Record<string, unknown>, hooks: { parameters: EvalParameters; metadata: Record<string, unknown> }): Promise<{ final_output: string; messages: SerializedMessage[] }> {
   try {
-    const parameters = hooks.parameters as EvalParameters;
-    const config: Partial<AgentConfig> = {
-      ...parameters,
-      system_prompt: resolvePromptText(parameters.system_prompt),
-      research_agent_prompt: resolvePromptText(parameters.research_agent_prompt),
-      math_agent_prompt: resolvePromptText(parameters.math_agent_prompt),
-    };
+    const config = hooks.parameters as Partial<AgentConfig>;
     const supervisor = getSupervisor({ config, forceRebuild: true });
     const query = extractQueryFromInput(input);
 

@@ -10,7 +10,6 @@ import {
   EVAL_PARAMETERS_PROJECT_NAME,
   EVAL_PARAMETERS_SLUG,
   type EvalParameters,
-  resolvePromptText,
 } from "./parameters.js";
 
 configureTracing({
@@ -25,16 +24,15 @@ type ResearchTaskOutput = { messages: SerializedMessage[] };
 async function runResearchTask(
   input: ResearchTaskInput,
   hooks: {
-    parameters: Record<string, unknown>;
+    parameters: Pick<EvalParameters, "research_agent_prompt" | "research_model">;
     metadata: Record<string, unknown>;
   },
 ): Promise<ResearchTaskOutput> {
   try {
-    const parameters = hooks.parameters as Pick<EvalParameters, "research_agent_prompt" | "research_model">;
     const result = await runResearchAgent({
       query: input.query,
-      systemPrompt: resolvePromptText(parameters.research_agent_prompt),
-      model: parameters.research_model,
+      systemPrompt: hooks.parameters.research_agent_prompt,
+      model: hooks.parameters.research_model,
     });
 
     const toolCalls = result.messages.flatMap((message) => message.tool_calls ?? []);

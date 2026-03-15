@@ -11,7 +11,6 @@ import {
   EVAL_PARAMETERS_PROJECT_NAME,
   EVAL_PARAMETERS_SLUG,
   type EvalParameters,
-  resolvePromptText,
 } from "./parameters.js";
 
 configureTracing({
@@ -26,16 +25,15 @@ type MathTaskOutput = { messages: SerializedMessage[] };
 async function runMathTask(
   input: MathTaskInput,
   hooks: {
-    parameters: Record<string, unknown>;
+    parameters: Pick<EvalParameters, "math_agent_prompt" | "math_model">;
     metadata: Record<string, unknown>;
   },
 ): Promise<MathTaskOutput> {
   try {
-    const parameters = hooks.parameters as Pick<EvalParameters, "math_agent_prompt" | "math_model">;
     const result = await runMathAgent({
       query: input.query,
-      systemPrompt: resolvePromptText(parameters.math_agent_prompt),
-      model: parameters.math_model,
+      systemPrompt: hooks.parameters.math_agent_prompt,
+      model: hooks.parameters.math_model,
     });
 
     const toolCalls = result.messages.flatMap((message) => message.tool_calls ?? []);
