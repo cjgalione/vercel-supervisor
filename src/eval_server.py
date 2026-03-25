@@ -69,6 +69,7 @@ def braintrust_eval_server() -> FastAPI:
 
         env = os.environ.copy()
         env.setdefault("BRAINTRUST_DEVSERVER_PORT", str(DEVSERVER_PORT))
+        env.setdefault("BRAINTRUST_DEVSERVER_HOST", "0.0.0.0")
 
         tail = state["tail"]
         assert isinstance(tail, deque)
