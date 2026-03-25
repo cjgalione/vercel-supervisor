@@ -11,7 +11,6 @@
     "check": "tsc --noEmit",
     "eval": "bt eval evals/eval_supervisor.ts evals/eval_math_agent.ts evals/eval_research_agent.ts",
     "eval:dev": "bt eval evals/eval_supervisor.ts evals/eval_math_agent.ts evals/eval_research_agent.ts --dev --dev-host 0.0.0.0 --dev-port 8300",
-    "parity:gate": "python3 scripts/parity_gate.py",
     "run:local": "tsx src-ts/cli/local_runner.ts",
     "run:query": "tsx scripts/retest_query.ts",
     "run:queries": "tsx scripts/run_queries.ts"

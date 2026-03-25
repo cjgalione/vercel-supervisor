@@ -8,9 +8,7 @@ Multi-agent supervisor system ported from Google ADK to Vercel AI SDK Core.
 - Braintrust tracing now uses `wrapAISDK` and explicit spans.
 - Braintrust evals are now TypeScript (`evals/*.ts`) with Zod parameters.
 - Daily query runner is now TypeScript (`scripts/run_queries.ts`).
-- Modal remote eval keeps a thin Python wrapper that proxies to `braintrust eval evals --dev`.
-
-Legacy Python files remain during dual-run/cutover for compatibility.
+- Repository is TypeScript-only for runtime, evals, and scripts.
 
 ## Setup
 
@@ -63,7 +61,7 @@ bt eval evals/eval_research_agent.ts
 Deploy:
 
 ```bash
-modal deploy src/eval_server.py
+npm run eval:dev
 ```
 
-The Modal app launches `npm run eval:dev` in-container and proxies requests.
+This starts Braintrust eval dev mode directly from Node.
