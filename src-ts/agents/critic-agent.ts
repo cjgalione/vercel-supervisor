@@ -1,4 +1,4 @@
-import { googleModel } from "../model.js";
+import { openaiModel } from "../model.js";
 import { getAISDK } from "../tracing.js";
 import type { SerializedMessage } from "../types.js";
 
@@ -32,7 +32,7 @@ export async function runCriticAgent(options: {
   };
 
   const response = await aiSdk.generateText({
-    model: googleModel(options.model ?? "gemini-2.0-flash-lite"),
+    model: openaiModel(options.model ?? "gpt-4.1-mini"),
     system: options.systemPrompt ?? DEFAULT_CRITIC_AGENT_PROMPT,
     prompt: `Evaluate this candidate against delegation policy and return JSON only.\n${JSON.stringify(payload)}`,
   });

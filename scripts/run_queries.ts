@@ -4,13 +4,13 @@ import "dotenv/config";
 import { parseArgs } from "node:util";
 
 import { defaultAgentConfig } from "../src-ts/config.js";
-import { googleModel } from "../src-ts/model.js";
+import { openaiModel } from "../src-ts/model.js";
 import { configureTracing, flushTracing, getAISDK } from "../src-ts/tracing.js";
 import { getSupervisor, runSupervisorWithCritic } from "../src-ts/supervisor.js";
 
 const DEFAULT_BRAINTRUST_PROJECT = "vercel-ai-sdk-supervisor";
-const MODEL_POOL = ["gemini-2.0-flash-lite"];
-const QUESTION_GENERATOR_MODEL = "gemini-2.0-flash-lite";
+const MODEL_POOL = ["gpt-4.1-mini"];
+const QUESTION_GENERATOR_MODEL = "gpt-4.1-mini";
 
 const QUESTION_BANK = [
   "What is 37 * 24?",
@@ -37,7 +37,7 @@ function isResourceExhaustedError(error: unknown): boolean {
 
 function isHardQuotaExhausted(error: unknown): boolean {
   const text = String(error).toLowerCase();
-  return text.includes("generaterequestsperday") || text.includes("limit: 0");
+  return text.includes("insufficient_quota") || text.includes("exceeded your current quota");
 }
 
 function retryDelaySeconds(error: unknown): number | null {
@@ -81,7 +81,7 @@ async function generateQuestions(numQuestions: number, seed?: number): Promise<s
 
   try {
     const response = await aiSdk.generateText({
-      model: googleModel(QUESTION_GENERATOR_MODEL),
+      model: openaiModel(QUESTION_GENERATOR_MODEL),
       prompt: `Generate exactly ${numQuestions} realistic user questions that test an AI multi-agent system.
 Create a diverse mix of pure math, pure research, hybrid, and edge-case conversational questions.
 Return only a valid JSON array of strings, no markdown, no explanation, each question <200 chars.`,
@@ -102,7 +102,7 @@ async function quotaPreflightOk(): Promise<{ ok: boolean; reason: string }> {
   const aiSdk = getAISDK();
   try {
     await aiSdk.generateText({
-      model: googleModel(QUESTION_GENERATOR_MODEL),
+      model: openaiModel(QUESTION_GENERATOR_MODEL),
       prompt: "Reply with exactly: OK",
     });
     return { ok: true, reason: "" };
@@ -136,7 +136,7 @@ async function runQuestion(options: {
       const result = await runSupervisorWithCritic({
         supervisor,
         query: options.question,
-        appName: "google-adk-supervisor-batch",
+        appName: "vercel-ai-sdk-supervisor-batch",
       });
       console.log(`✅ ${options.question.slice(0, 80)} -> ${result.final_output.slice(0, 80)}`);
       return { ok: true, hardStop: false };

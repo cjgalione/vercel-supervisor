@@ -16,7 +16,7 @@ configureTracing({
 
 const parameters = {
   research_agent_prompt: z.string().default(DEFAULT_RESEARCH_AGENT_PROMPT),
-  research_model: z.string().default("gemini-2.0-flash-lite"),
+  research_model: z.string().default("gpt-4.1-mini"),
 };
 
 type ResearchTaskInput = { query: string };

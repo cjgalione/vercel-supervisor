@@ -2,7 +2,7 @@ import { stepCountIs, tool } from "ai";
 import { z } from "zod";
 
 import { DEFAULT_RESEARCH_AGENT_PROMPT } from "../config.js";
-import { googleModel } from "../model.js";
+import { openaiModel } from "../model.js";
 import { MessageRecorder } from "../serializer.js";
 import { getAISDK } from "../tracing.js";
 import type { AgentRunResult } from "../types.js";
@@ -114,7 +114,7 @@ export async function runResearchAgent(options: {
   }
 
   const response = await aiSdk.generateText({
-    model: googleModel(options.model ?? "gemini-2.0-flash-lite"),
+    model: openaiModel(options.model ?? "gpt-4.1-mini"),
     system: options.systemPrompt ?? DEFAULT_RESEARCH_AGENT_PROMPT,
     prompt: options.query,
     tools,

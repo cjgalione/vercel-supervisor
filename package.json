@@ -16,7 +16,7 @@
     "run:queries": "tsx scripts/run_queries.ts"
   },
   "dependencies": {
-    "@ai-sdk/google": "^2.0.0",
+    "@ai-sdk/openai": "^2.0.0",
     "ai": "^5.0.0",
     "braintrust": "latest",
     "dotenv": "^17.2.3",

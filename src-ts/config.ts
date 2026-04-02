@@ -35,9 +35,9 @@ INSTRUCTIONS:
 - If no additional handoff is needed, provide a concise answer that includes both the calculation and the final numeric result
 - For compound tasks, preserve factual context in the final answer (do not return only a bare number).`;
 
-export const DEFAULT_SUPERVISOR_MODEL = "gemini-2.0-flash-lite";
-export const DEFAULT_RESEARCH_MODEL = "gemini-2.0-flash-lite";
-export const DEFAULT_MATH_MODEL = "gemini-2.0-flash-lite";
+export const DEFAULT_SUPERVISOR_MODEL = "gpt-4.1-mini";
+export const DEFAULT_RESEARCH_MODEL = "gpt-4.1-mini";
+export const DEFAULT_MATH_MODEL = "gpt-4.1-mini";
 
 function buildDefaultSystemPrompt(): string {
   const date = new Date().toISOString().slice(0, 10);

@@ -18,7 +18,7 @@ import {
   divide,
 } from "./agents/math-agent.js";
 import { runResearchAgent } from "./agents/research-agent.js";
-import { googleModel } from "./model.js";
+import { openaiModel } from "./model.js";
 import { MessageRecorder, extractFloatFromText, hasMarker } from "./serializer.js";
 import { getAISDK, withSpan } from "./tracing.js";
 import type { SerializedMessage, SupervisorRunResult } from "./types.js";
@@ -208,7 +208,7 @@ export async function runSupervisorWithCritic(options: {
               b,
               resultMode: "numeric",
               mode: "subtask",
-              appName: "google-adk-supervisor-math-subtask",
+              appName: "vercel-ai-sdk-supervisor-math-subtask",
             });
             if (math.parsed_result === null) {
               throw new Error(`MathAgent did not return numeric result for operation '${operation}'.`);
@@ -264,7 +264,7 @@ export async function runSupervisorWithCritic(options: {
             const research = await runResearchHandoff(
               queryForResearch,
               "subtask",
-              "google-adk-supervisor-research-subtask",
+              "vercel-ai-sdk-supervisor-research-subtask",
             );
             return research.final_output;
           },
@@ -318,7 +318,7 @@ export async function runSupervisorWithCritic(options: {
     const recorder = new MessageRecorder(query);
 
     const response = await aiSdk.generateText({
-      model: googleModel(config.supervisor_model ?? DEFAULT_SUPERVISOR_MODEL),
+      model: openaiModel(config.supervisor_model ?? DEFAULT_SUPERVISOR_MODEL),
       system: prompt,
       prompt: query,
       tools: {
@@ -330,7 +330,7 @@ export async function runSupervisorWithCritic(options: {
             const handoff = await runResearchHandoff(
               toolQuery,
               "delegate",
-              "google-adk-supervisor-delegate-research",
+              "vercel-ai-sdk-supervisor-delegate-research",
             );
             recorder.addMessages(handoff.messages);
             recorder.addToolResult(handoff.final_output);
@@ -345,7 +345,7 @@ export async function runSupervisorWithCritic(options: {
             const handoff = await runResearchHandoff(
               toolQuery,
               "subtask",
-              "google-adk-supervisor-research-subtask",
+              "vercel-ai-sdk-supervisor-research-subtask",
             );
             recorder.addMessages(handoff.messages);
             recorder.addToolResult(handoff.final_output);
@@ -376,7 +376,7 @@ export async function runSupervisorWithCritic(options: {
               b,
               resultMode: result_mode,
               mode: "delegate",
-              appName: "google-adk-supervisor-delegate-math",
+              appName: "vercel-ai-sdk-supervisor-delegate-math",
             });
             recorder.addMessages(handoff.messages);
             recorder.addToolResult(handoff.returned_response);
@@ -394,7 +394,7 @@ export async function runSupervisorWithCritic(options: {
               b,
               resultMode: "numeric",
               mode: "subtask",
-              appName: "google-adk-supervisor-math-subtask",
+              appName: "vercel-ai-sdk-supervisor-math-subtask",
             });
             if (handoff.parsed_result === null) {
               throw new Error(`MathAgent did not return a numeric result for operation '${operation}'.`);
@@ -473,7 +473,7 @@ export async function runSupervisorWithCritic(options: {
           const handoff = await runResearchHandoff(
             options.query,
             "critic_correction",
-            "google-adk-supervisor-critic-delegate-research",
+            "vercel-ai-sdk-supervisor-critic-delegate-research",
           );
           finalOutput = handoff.final_output.trim();
           messages.push(...handoff.messages);
@@ -483,7 +483,7 @@ export async function runSupervisorWithCritic(options: {
             mathTask: options.query,
             resultMode: "explanatory",
             mode: "critic_correction",
-            appName: "google-adk-supervisor-critic-delegate-math",
+            appName: "vercel-ai-sdk-supervisor-critic-delegate-math",
           });
           finalOutput = handoff.returned_response.trim();
           messages.push(...handoff.messages);
@@ -492,7 +492,7 @@ export async function runSupervisorWithCritic(options: {
           const strictQuery = `POLICY ENFORCEMENT: You MUST delegate to the correct specialist agent(s) for this query and must not answer directly when delegation rules apply.\nOriginal query: ${options.query}`;
           const rerun = await runSupervisorCandidate(
             strictQuery,
-            "google-adk-supervisor-critic-retry",
+            "vercel-ai-sdk-supervisor-critic-retry",
           );
           finalOutput = rerun.final_output.trim();
           messages.push(...rerun.messages);

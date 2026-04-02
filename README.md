@@ -1,10 +1,10 @@
 # Vercel AI SDK Supervisor
 
-Multi-agent supervisor system ported from Google ADK to Vercel AI SDK Core.
+Multi-agent supervisor system built on Vercel AI SDK Core.
 
 ## What changed
 
-- Runtime moved to TypeScript (`src-ts/`) with Vercel AI SDK + Gemini provider.
+- Runtime moved to TypeScript (`src-ts/`) with Vercel AI SDK + OpenAI provider.
 - Braintrust tracing now uses `wrapAISDK` and explicit spans.
 - Braintrust evals are now TypeScript (`evals/*.ts`) with Zod parameters.
 - Daily query runner is now TypeScript (`scripts/run_queries.ts`).
@@ -19,7 +19,7 @@ cp .env.example .env
 
 Required env vars:
 
-- `GOOGLE_API_KEY` (or `GOOGLE_GENERATIVE_AI_API_KEY`)
+- `OPENAI_API_KEY`
 - `TAVILY_API_KEY`
 - `BRAINTRUST_API_KEY` (for tracing/evals)
 - Optional: `BRAINTRUST_PROJECT`, `BRAINTRUST_PROJECT_ID`, `TRACE_PROFILE=full|lean`

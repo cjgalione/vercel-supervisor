@@ -1,17 +1,17 @@
-import { createGoogleGenerativeAI, type GoogleGenerativeAIProvider } from "@ai-sdk/google";
+import { createOpenAI, type OpenAIProvider } from "@ai-sdk/openai";
 
-import { resolveGoogleApiKey } from "./tracing.js";
+import { resolveOpenAIApiKey } from "./tracing.js";
 
-let provider: GoogleGenerativeAIProvider | null = null;
+let provider: OpenAIProvider | null = null;
 
-export function getGoogleProvider(): GoogleGenerativeAIProvider {
+export function getOpenAIProvider(): OpenAIProvider {
   if (!provider) {
-    const apiKey = resolveGoogleApiKey();
-    provider = createGoogleGenerativeAI({ apiKey });
+    const apiKey = resolveOpenAIApiKey();
+    provider = createOpenAI({ apiKey });
   }
   return provider;
 }
 
-export function googleModel(modelName: string) {
-  return getGoogleProvider()(modelName);
+export function openaiModel(modelName: string) {
+  return getOpenAIProvider()(modelName);
 }

@@ -17,7 +17,7 @@ configureTracing({
 
 const parameters = {
   math_agent_prompt: z.string().default(DEFAULT_MATH_AGENT_PROMPT),
-  math_model: z.string().default("gemini-2.0-flash-lite"),
+  math_model: z.string().default("gpt-4.1-mini"),
 };
 
 type MathTaskInput = { query: string; expected_answer?: number };

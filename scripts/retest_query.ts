@@ -9,7 +9,7 @@ import { configureTracing, flushTracing } from "../src-ts/tracing.js";
 import { getSupervisor, runSupervisorWithCritic } from "../src-ts/supervisor.js";
 
 const DEFAULT_PROJECT = "vercel-ai-sdk-supervisor";
-const DEFAULT_SUPERVISOR_MODEL = "gemini-2.0-flash-lite";
+const DEFAULT_SUPERVISOR_MODEL = "gpt-4.1-mini";
 
 function parseMetadata(raw: string[] | undefined): Record<string, unknown> {
   const metadata: Record<string, unknown> = {};

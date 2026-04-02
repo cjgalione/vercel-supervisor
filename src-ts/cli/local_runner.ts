@@ -20,7 +20,7 @@ async function main(): Promise<void> {
   const rl = createInterface({ input, output });
   const supervisor = getSupervisor();
 
-  output.write("Google ADK Supervisor Chat (Vercel AI SDK)\nType 'quit' or 'q' to exit.\n\n");
+  output.write("Vercel AI SDK Supervisor Chat (OpenAI)\nType 'quit' or 'q' to exit.\n\n");
 
   try {
     while (true) {
@@ -36,7 +36,7 @@ async function main(): Promise<void> {
       const result = await runSupervisorWithCritic({
         supervisor,
         query: userInput,
-        appName: "google-adk-supervisor-local",
+        appName: "vercel-ai-sdk-supervisor-local",
       });
 
       output.write(`Assistant: ${result.final_output || "(No response generated)"}\n\n`);

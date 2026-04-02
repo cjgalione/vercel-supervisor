@@ -18,19 +18,8 @@ export function getTraceProfile(): TraceProfile {
   return profile === "lean" ? "lean" : "full";
 }
 
-export function resolveGoogleApiKey(): string | undefined {
-  const direct = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  if (direct) {
-    return direct;
-  }
-
-  const legacy = process.env.GOOGLE_API_KEY;
-  if (legacy) {
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY = legacy;
-    return legacy;
-  }
-
-  return undefined;
+export function resolveOpenAIApiKey(): string | undefined {
+  return process.env.OPENAI_API_KEY;
 }
 
 export function configureTracing(options?: {

@@ -19,7 +19,7 @@ const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, "..");
 
 const DEFAULT_BRAINTRUST_PROJECT = "vercel-ai-sdk-supervisor";
-const DEFAULT_BRAINTRUST_DATASET = "Google ADK Supervisor Dataset";
+const DEFAULT_BRAINTRUST_DATASET = "Vercel AI SDK Supervisor Dataset";
 
 configureTracing({
   apiKey: process.env.BRAINTRUST_API_KEY,
@@ -94,7 +94,7 @@ async function runSupervisorTask(input: Record<string, unknown>, hooks: { parame
     const result = await runSupervisorWithCritic({
       supervisor,
       query,
-      appName: "google-adk-supervisor-eval-supervisor",
+      appName: "vercel-ai-sdk-supervisor-eval-supervisor",
     });
 
     hooks.metadata.final_output = result.final_output;
