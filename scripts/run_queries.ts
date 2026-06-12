@@ -5,7 +5,7 @@ import { parseArgs } from "node:util";
 
 import { defaultAgentConfig } from "../src-ts/config.js";
 import { openaiModel } from "../src-ts/model.js";
-import { configureTracing, flushTracing, getAISDK } from "../src-ts/tracing.js";
+import { configureTracing, flushTracing, getAISDK, validateBraintrustAccess } from "../src-ts/tracing.js";
 import { getSupervisor, runSupervisorWithCritic } from "../src-ts/supervisor.js";
 
 const DEFAULT_BRAINTRUST_PROJECT = "vercel-ai-sdk-supervisor";
@@ -179,6 +179,7 @@ async function main(): Promise<void> {
         default: process.env.INTER_QUESTION_DELAY_SECONDS ?? "2",
       },
       "quota-preflight": { type: "boolean", default: (process.env.QUOTA_PREFLIGHT ?? "1") !== "0" },
+      "require-braintrust": { type: "boolean", default: (process.env.REQUIRE_BRAINTRUST ?? "0") === "1" },
     },
   });
 
@@ -190,12 +191,18 @@ async function main(): Promise<void> {
   const interQuestionDelaySeconds = Number(values["inter-question-delay-seconds"]);
 
   if (process.env.BRAINTRUST_API_KEY) {
+    await validateBraintrustAccess({
+      apiKey: process.env.BRAINTRUST_API_KEY,
+      orgName: process.env.BRAINTRUST_ORG_NAME,
+    });
     configureTracing({
       apiKey: process.env.BRAINTRUST_API_KEY,
       projectName: process.env.BRAINTRUST_PROJECT ?? DEFAULT_BRAINTRUST_PROJECT,
       projectId: process.env.BRAINTRUST_PROJECT_ID,
       asyncFlush: false,
     });
+  } else if (values["require-braintrust"]) {
+    throw new Error("BRAINTRUST_API_KEY is required for this run.");
   }
 
   if (values["quota-preflight"]) {

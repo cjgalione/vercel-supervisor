@@ -2,6 +2,7 @@ import * as ai from "ai";
 import {
   flush,
   initLogger,
+  login,
   startSpan,
   traced,
   wrapAISDK,
@@ -41,6 +42,23 @@ export function configureTracing(options?: {
   });
 
   loggerInitialized = true;
+}
+
+export async function validateBraintrustAccess(options?: {
+  apiKey?: string;
+  orgName?: string;
+}): Promise<void> {
+  const apiKey = options?.apiKey ?? process.env.BRAINTRUST_API_KEY;
+  if (!apiKey) {
+    throw new Error("BRAINTRUST_API_KEY is missing.");
+  }
+
+  await login({
+    apiKey,
+    orgName: options?.orgName ?? process.env.BRAINTRUST_ORG_NAME,
+    forceLogin: true,
+    noExitFlush: true,
+  });
 }
 
 export function getAISDK(): typeof ai {

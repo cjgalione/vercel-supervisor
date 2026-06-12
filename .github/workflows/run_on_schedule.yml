@@ -28,6 +28,7 @@ jobs:
         env:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           BRAINTRUST_API_KEY: ${{ secrets.BRAINTRUST_API_KEY }}
           BRAINTRUST_PROJECT: vercel-ai-sdk-supervisor
           BRAINTRUST_ORG_NAME: Braintrust Demos
@@ -37,5 +38,6 @@ jobs:
           MAX_RETRIES: 3
           BASE_RETRY_SECONDS: 15
           INTER_QUESTION_DELAY_SECONDS: 2
+          REQUIRE_BRAINTRUST: 1
           TRACE_PROFILE: lean
-        run: npm run run:queries -- --num-questions "$NUM_QUESTIONS"
+        run: npm run run:queries -- --num-questions "$NUM_QUESTIONS" --fail-on-error --require-braintrust
