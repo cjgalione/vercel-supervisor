@@ -20,8 +20,9 @@ cp .env.example .env
 Required env vars:
 
 - `OPENAI_API_KEY`
-- `TAVILY_API_KEY`
+- `EXA_API_KEY`
 - `BRAINTRUST_API_KEY` (for tracing/evals)
+- Optional: `TAVILY_API_KEY` or `YDC_API_KEY` for fallback web search
 - Optional: `BRAINTRUST_PROJECT`, `BRAINTRUST_PROJECT_ID`, `TRACE_PROFILE=full|lean`
 
 ## Local run

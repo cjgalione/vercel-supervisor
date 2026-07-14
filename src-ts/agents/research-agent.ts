@@ -7,12 +7,67 @@ import { MessageRecorder } from "../serializer.js";
 import { getAISDK } from "../tracing.js";
 import type { AgentRunResult } from "../types.js";
 
+type SearchProvider = "exa" | "tavily" | "you";
+
 function getTavilyApiKey(): string {
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) {
     throw new Error("TAVILY_API_KEY is not set");
   }
   return apiKey;
+}
+
+function getExaApiKey(): string {
+  const apiKey = process.env.EXA_API_KEY;
+  if (!apiKey) {
+    throw new Error("EXA_API_KEY is not set");
+  }
+  return apiKey;
+}
+
+function getYouApiKey(): string {
+  for (const envName of ["YDC_API_KEY", "YOU_API_KEY", "YOUCOM_API_KEY"]) {
+    const apiKey = process.env[envName];
+    if (apiKey) {
+      return apiKey;
+    }
+  }
+  throw new Error("YDC_API_KEY is not set");
+}
+
+function hasProviderKey(provider: SearchProvider): boolean {
+  if (provider === "exa") {
+    return Boolean(process.env.EXA_API_KEY);
+  }
+  if (provider === "tavily") {
+    return Boolean(process.env.TAVILY_API_KEY);
+  }
+  return Boolean(process.env.YDC_API_KEY || process.env.YOU_API_KEY || process.env.YOUCOM_API_KEY);
+}
+
+function normalizeSearchProvider(provider: string | undefined): SearchProvider {
+  const normalized = (provider || "exa").trim().toLowerCase().replace("_", "-");
+  if (normalized === "you.com" || normalized === "youcom" || normalized === "ydc") {
+    return "you";
+  }
+  if (normalized === "tavily" || normalized === "you" || normalized === "exa") {
+    return normalized;
+  }
+  return "exa";
+}
+
+function searchProviderOrder(): SearchProvider[] {
+  const preferred = normalizeSearchProvider(
+    process.env.SEARCH_PROVIDER || process.env.WEB_SEARCH_PROVIDER,
+  );
+  const providers: SearchProvider[] = ["exa", "tavily", "you"];
+  const ordered: SearchProvider[] = [preferred];
+  for (const provider of providers) {
+    if (!ordered.includes(provider) && hasProviderKey(provider)) {
+      ordered.push(provider);
+    }
+  }
+  return ordered;
 }
 
 async function tavilySearch(query: string, maxResults: number): Promise<string> {
@@ -62,6 +117,139 @@ async function tavilySearch(query: string, maxResults: number): Promise<string> 
   return lines.join("\n\n");
 }
 
+async function exaSearch(query: string, maxResults: number): Promise<string> {
+  const response = await fetch("https://api.exa.ai/search", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": getExaApiKey(),
+    },
+    body: JSON.stringify({
+      query,
+      type: "auto",
+      numResults: Math.max(1, Math.min(maxResults, 5)),
+      contents: { highlights: true },
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Exa search failed: ${response.status} ${body}`);
+  }
+
+  const data = (await response.json()) as {
+    results?: Array<{
+      title?: string;
+      url?: string;
+      highlights?: string[] | string;
+      summary?: string;
+      text?: string;
+    }>;
+  };
+
+  const results = data.results ?? [];
+  if (results.length === 0) {
+    return "No search results found.";
+  }
+
+  return results
+    .slice(0, maxResults)
+    .map((item, index) => {
+      const highlights = Array.isArray(item.highlights)
+        ? item.highlights.filter(Boolean).join(" ")
+        : item.highlights;
+      const content = highlights || item.summary || item.text?.slice(0, 800) || "N/A";
+      return `${index + 1}. ${item.title?.trim() || "Untitled"}\nURL: ${
+        item.url?.trim() || "N/A"
+      }\nSummary: ${content}`;
+    })
+    .join("\n\n");
+}
+
+async function youSearch(query: string, maxResults: number): Promise<string> {
+  const url = new URL("https://ydc-index.io/v1/search");
+  url.searchParams.set("query", query);
+  url.searchParams.set("count", String(Math.max(1, Math.min(maxResults, 5))));
+
+  const response = await fetch(url, {
+    headers: {
+      "X-API-Key": getYouApiKey(),
+      "User-Agent": "supervisor-demos/1.0",
+    },
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`You.com search failed: ${response.status} ${body}`);
+  }
+
+  const data = (await response.json()) as {
+    results?: {
+      web?: Array<{
+        title?: string;
+        url?: string;
+        description?: string;
+        snippets?: string[] | string;
+      }>;
+      news?: Array<{
+        title?: string;
+        url?: string;
+        description?: string;
+        snippets?: string[] | string;
+      }>;
+    };
+  };
+
+  const results = [
+    ...(data.results?.web ?? []).map((item) => ({ type: "web", item })),
+    ...(data.results?.news ?? []).map((item) => ({ type: "news", item })),
+  ];
+
+  if (results.length === 0) {
+    return "No search results found.";
+  }
+
+  return results
+    .slice(0, maxResults)
+    .map(({ type, item }, index) => {
+      const snippets = Array.isArray(item.snippets)
+        ? item.snippets.filter(Boolean).slice(0, 2).join(" ")
+        : item.snippets;
+      const content = snippets || item.description || "N/A";
+      return `${index + 1}. ${item.title?.trim() || "Untitled"}\nURL: ${
+        item.url?.trim() || "N/A"
+      }\nSource: You.com ${type}\nSummary: ${content}`;
+    })
+    .join("\n\n");
+}
+
+async function searchWithProvider(
+  provider: SearchProvider,
+  query: string,
+  maxResults: number,
+): Promise<string> {
+  if (provider === "exa") {
+    return exaSearch(query, maxResults);
+  }
+  if (provider === "tavily") {
+    return tavilySearch(query, maxResults);
+  }
+  return youSearch(query, maxResults);
+}
+
+async function webSearch(query: string, maxResults: number): Promise<string> {
+  const errors: string[] = [];
+  for (const provider of searchProviderOrder()) {
+    try {
+      return await searchWithProvider(provider, query, maxResults);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      errors.push(`${provider}: ${message}`);
+    }
+  }
+  throw new Error(`Web search failed for configured providers: ${errors.join("; ")}`);
+}
+
 export async function runResearchAgent(options: {
   query: string;
   model?: string;
@@ -80,7 +268,7 @@ export async function runResearchAgent(options: {
       }),
       execute: async ({ query, max_results }: { query: string; max_results: number }) => {
         recorder.addToolCall("tavily_search", { query, max_results });
-        const result = await tavilySearch(query, max_results);
+        const result = await webSearch(query, max_results);
         recorder.addToolResult(result);
         return result;
       },
