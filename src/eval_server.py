@@ -7,7 +7,6 @@ import os
 import subprocess
 from collections import deque
 
-import httpx
 import modal
 from fastapi import FastAPI, Request, Response
 
@@ -63,6 +62,8 @@ _secrets = [modal.Secret.from_dotenv()]
 @modal.concurrent(max_inputs=10)
 @modal.asgi_app()
 def braintrust_eval_server() -> FastAPI:
+    import httpx
+
     eval_app = FastAPI(title="Braintrust TS Eval Proxy")
 
     state: dict[str, object] = {"proc": None, "tail": deque(maxlen=120)}
