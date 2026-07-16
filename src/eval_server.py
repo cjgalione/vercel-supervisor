@@ -14,6 +14,17 @@ from fastapi import FastAPI, Request, Response
 DEVSERVER_PORT = int(os.environ.get("BRAINTRUST_DEVSERVER_PORT", "8300"))
 UPSTREAM_BASE = f"http://127.0.0.1:{DEVSERVER_PORT}"
 
+
+def _modal_min_containers() -> int:
+    value = os.environ.get("MODAL_MIN_CONTAINERS", "0")
+    try:
+        count = int(value)
+    except ValueError as exc:
+        raise RuntimeError("MODAL_MIN_CONTAINERS must be a non-negative integer") from exc
+    if count < 0:
+        raise RuntimeError("MODAL_MIN_CONTAINERS must be a non-negative integer")
+    return count
+
 modal_image = (
     modal.Image.debian_slim()
     .apt_install("curl", "git", "ca-certificates")
@@ -46,7 +57,7 @@ _secrets = [modal.Secret.from_dotenv()]
 
 @app.function(
     secrets=_secrets,
-    min_containers=1,
+    min_containers=_modal_min_containers(),
     timeout=3600,
 )
 @modal.concurrent(max_inputs=10)

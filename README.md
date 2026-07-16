@@ -66,3 +66,6 @@ npm run eval:dev
 ```
 
 This starts Braintrust eval dev mode directly from Node.
+
+For an optional remote endpoint, run `modal deploy src/eval_server.py`. It scales to
+zero by default; set `MODAL_MIN_CONTAINERS=1` only when a warm endpoint is required.

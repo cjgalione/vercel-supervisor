@@ -166,6 +166,10 @@ async function exaSearch(query: string, maxResults: number): Promise<string> {
     .join("\n\n");
 }
 
+export async function runExaPreflight(): Promise<void> {
+  await exaSearch("Braintrust", 1);
+}
+
 async function youSearch(query: string, maxResults: number): Promise<string> {
   const url = new URL("https://ydc-index.io/v1/search");
   url.searchParams.set("query", query);

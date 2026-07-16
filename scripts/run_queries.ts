@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 import "dotenv/config";
 
+import { writeFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
+import { pathToFileURL } from "node:url";
 
 import { defaultAgentConfig } from "../src-ts/config.js";
+import { runExaPreflight } from "../src-ts/agents/research-agent.js";
 import { openaiModel } from "../src-ts/model.js";
 import { configureTracing, flushTracing, getAISDK, validateBraintrustAccess } from "../src-ts/tracing.js";
 import { getSupervisor, runSupervisorWithCritic } from "../src-ts/supervisor.js";
@@ -76,7 +79,14 @@ function fallbackQuestions(numQuestions: number, seed?: number): string[] {
   return out;
 }
 
-async function generateQuestions(numQuestions: number, seed?: number): Promise<string[]> {
+async function generateQuestions(
+  numQuestions: number,
+  seed?: number,
+  questionSource: "generated" | "bank" = "generated",
+): Promise<string[]> {
+  if (questionSource === "bank") {
+    return fallbackQuestions(numQuestions, seed);
+  }
   const aiSdk = getAISDK();
 
   try {
@@ -98,20 +108,64 @@ Return only a valid JSON array of strings, no markdown, no explanation, each que
   }
 }
 
-async function quotaPreflightOk(): Promise<{ ok: boolean; reason: string }> {
-  const aiSdk = getAISDK();
-  try {
-    await aiSdk.generateText({
-      model: openaiModel(QUESTION_GENERATOR_MODEL),
-      prompt: "Reply with exactly: OK",
-    });
-    return { ok: true, reason: "" };
-  } catch (error) {
-    if (isHardQuotaExhausted(error)) {
-      return { ok: false, reason: String(error) };
-    }
-    return { ok: true, reason: "" };
+export function preflightFailureCategory(error: unknown): string {
+  const text = String(error).toLowerCase();
+  if (isHardQuotaExhausted(error)) {
+    return "quota";
   }
+  if (
+    text.includes("authentication") ||
+    text.includes("invalid api key") ||
+    text.includes("incorrect api key") ||
+    text.includes("401")
+  ) {
+    return "authentication";
+  }
+  if (text.includes("429") || text.includes("timeout") || text.includes("connection")) {
+    return "transient";
+  }
+  return "provider";
+}
+
+async function runPreflight(): Promise<Record<string, string>> {
+  const missing = ["BRAINTRUST_API_KEY", "OPENAI_API_KEY", "EXA_API_KEY"].filter(
+    (name) => !process.env[name],
+  );
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variable(s): ${missing.join(", ")}`);
+  }
+
+  const aiSdk = getAISDK();
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      await aiSdk.generateText({
+        model: openaiModel(QUESTION_GENERATOR_MODEL),
+        prompt: "Reply with exactly: OK",
+      });
+      await runExaPreflight();
+      return { braintrust: "ok", model: "ok", exa: "ok" };
+    } catch (error) {
+      const category = preflightFailureCategory(error);
+      if (category === "transient" && attempt < 3) {
+        await new Promise((resolve) => setTimeout(resolve, 2 ** attempt * 1000));
+        continue;
+      }
+      // Avoid serializing provider exceptions because SDKs can include request details.
+      throw new Error(`Provider preflight failed (${category}).`);
+    }
+  }
+
+  throw new Error("Provider preflight failed (transient).");
+}
+
+async function writeSummary(
+  path: string | undefined,
+  summary: Record<string, unknown>,
+): Promise<void> {
+  if (!path) {
+    return;
+  }
+  await writeFile(path, `${JSON.stringify(summary, null, 2)}\n`);
 }
 
 async function runQuestion(options: {
@@ -178,7 +232,9 @@ async function main(): Promise<void> {
         type: "string",
         default: process.env.INTER_QUESTION_DELAY_SECONDS ?? "2",
       },
-      "quota-preflight": { type: "boolean", default: (process.env.QUOTA_PREFLIGHT ?? "1") !== "0" },
+      "preflight-only": { type: "boolean", default: false },
+      "skip-preflight": { type: "boolean", default: false },
+      "question-source": { type: "string", default: process.env.QUESTION_SOURCE ?? "generated" },
       "require-braintrust": { type: "boolean", default: (process.env.REQUIRE_BRAINTRUST ?? "0") === "1" },
     },
   });
@@ -189,6 +245,7 @@ async function main(): Promise<void> {
   const maxRetries = Math.max(0, Number(values["max-retries"]));
   const baseRetrySeconds = Number(values["base-retry-seconds"]);
   const interQuestionDelaySeconds = Number(values["inter-question-delay-seconds"]);
+  const questionSource = values["question-source"] === "bank" ? "bank" : "generated";
 
   if (process.env.BRAINTRUST_API_KEY) {
     await validateBraintrustAccess({
@@ -205,20 +262,24 @@ async function main(): Promise<void> {
     throw new Error("BRAINTRUST_API_KEY is required for this run.");
   }
 
-  if (values["quota-preflight"]) {
-    const preflight = await quotaPreflightOk();
-    if (!preflight.ok) {
-      console.log("Hard quota appears exhausted; skipping this batch run.");
-      console.log(preflight.reason);
-      return;
-    }
+  const preflight = values["skip-preflight"] ? {} : await runPreflight();
+  if (values["preflight-only"]) {
+    await writeSummary(process.env.QUERY_SUMMARY_PATH, {
+      preflight,
+      total: 0,
+      successes: 0,
+      failures: 0,
+    });
+    console.log("Provider preflight passed.");
+    return;
   }
 
-  const questions = await generateQuestions(numQuestions, seed);
+  const questions = await generateQuestions(numQuestions, seed, questionSource);
 
   console.log(`Generated ${questions.length} questions`);
   console.log(`Running with concurrency=${concurrency}`);
   console.log(`Model pool: ${MODEL_POOL.join(", ")}`);
+  console.log(`Question source: ${questionSource}`);
   console.log("=".repeat(80));
 
   let successes = 0;
@@ -269,13 +330,21 @@ async function main(): Promise<void> {
   console.log("=".repeat(80));
 
   await flushTracing();
+  await writeSummary(process.env.QUERY_SUMMARY_PATH, {
+    preflight,
+    total: questions.length,
+    successes,
+    failures,
+  });
 
   if (values["fail-on-error"] && failures > 0) {
     process.exit(1);
   }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}
