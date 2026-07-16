@@ -8,7 +8,6 @@ import subprocess
 from collections import deque
 
 import modal
-from fastapi import FastAPI, Request, Response
 
 DEVSERVER_PORT = int(os.environ.get("BRAINTRUST_DEVSERVER_PORT", "8300"))
 UPSTREAM_BASE = f"http://127.0.0.1:{DEVSERVER_PORT}"
@@ -63,6 +62,7 @@ _secrets = [modal.Secret.from_dotenv()]
 @modal.asgi_app()
 def braintrust_eval_server() -> FastAPI:
     import httpx
+    from fastapi import FastAPI, Request, Response
 
     eval_app = FastAPI(title="Braintrust TS Eval Proxy")
 
