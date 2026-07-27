@@ -20,7 +20,11 @@ export function getTraceProfile(): TraceProfile {
 }
 
 export function resolveOpenAIApiKey(): string | undefined {
-  return process.env.OPENAI_API_KEY;
+  return process.env.BRAINTRUST_API_KEY;
+}
+
+export function resolveBraintrustGatewayUrl(): string {
+  return process.env.BRAINTRUST_GATEWAY_URL ?? "https://gateway.braintrust.dev";
 }
 
 export function configureTracing(options?: {

@@ -128,7 +128,7 @@ export function preflightFailureCategory(error: unknown): string {
 }
 
 async function runPreflight(): Promise<Record<string, string>> {
-  const missing = ["BRAINTRUST_API_KEY", "OPENAI_API_KEY", "EXA_API_KEY"].filter(
+  const missing = ["BRAINTRUST_API_KEY", "EXA_API_KEY"].filter(
     (name) => !process.env[name],
   );
   if (missing.length > 0) {

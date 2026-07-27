@@ -33,12 +33,12 @@ jobs:
       - name: Validate required secrets
         env:
           BRAINTRUST_API_KEY: ${{ secrets.BRAINTRUST_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           YDC_API_KEY: ${{ secrets.YDC_API_KEY }}
           BRAINTRUST_PROJECT: "vercel-ai-sdk-supervisor"
           BRAINTRUST_ORG_NAME: "Braintrust Demos"
+          BRAINTRUST_GATEWAY_URL: "https://gateway.braintrust.dev"
           SEARCH_PROVIDER: "exa"
           CONCURRENCY: "1"
           MAX_RETRIES: "3"
@@ -48,7 +48,7 @@ jobs:
           REQUIRE_BRAINTRUST: "1"
         run: |
           missing=0
-          for name in BRAINTRUST_API_KEY OPENAI_API_KEY EXA_API_KEY; do
+          for name in BRAINTRUST_API_KEY EXA_API_KEY; do
             if [ -z "${!name}" ]; then
               echo "::error::$name is not set"
               missing=1
@@ -62,12 +62,12 @@ jobs:
       - name: Preflight providers
         env:
           BRAINTRUST_API_KEY: ${{ secrets.BRAINTRUST_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           YDC_API_KEY: ${{ secrets.YDC_API_KEY }}
           BRAINTRUST_PROJECT: "vercel-ai-sdk-supervisor"
           BRAINTRUST_ORG_NAME: "Braintrust Demos"
+          BRAINTRUST_GATEWAY_URL: "https://gateway.braintrust.dev"
           SEARCH_PROVIDER: "exa"
           CONCURRENCY: "1"
           MAX_RETRIES: "3"
@@ -82,12 +82,12 @@ jobs:
       - name: Run queries
         env:
           BRAINTRUST_API_KEY: ${{ secrets.BRAINTRUST_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           YDC_API_KEY: ${{ secrets.YDC_API_KEY }}
           BRAINTRUST_PROJECT: "vercel-ai-sdk-supervisor"
           BRAINTRUST_ORG_NAME: "Braintrust Demos"
+          BRAINTRUST_GATEWAY_URL: "https://gateway.braintrust.dev"
           SEARCH_PROVIDER: "exa"
           CONCURRENCY: "1"
           MAX_RETRIES: "3"
