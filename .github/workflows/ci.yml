@@ -22,12 +22,12 @@ jobs:
     steps:
       - name: Checkout
         id: checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version-file: ".nvmrc"
           cache: "npm"
@@ -39,7 +39,7 @@ jobs:
         run: npm run check
 
       - name: Run Evals
-        uses: braintrustdata/eval-action@v1
+        uses: braintrustdata/eval-action@v2
         env:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
